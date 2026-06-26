@@ -1,0 +1,375 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="theme-color" content="#121212" />
+  <meta name="description" content="Ta médiathèque musicale personnelle" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="Escales" />
+  <title>Escales</title>
+  <link rel="manifest" href="/manifest.webmanifest" />
+  <link rel="icon" href="/icons/icon.svg" type="image/svg+xml" />
+  <link rel="stylesheet" href="/css/style.css" />
+</head>
+<body>
+
+<!-- ═══════════════════════════════════════════════════════
+     AUTH SCREEN
+     ═══════════════════════════════════════════════════════ -->
+<div id="auth-screen" class="auth-screen">
+  <div class="auth-card">
+    <div class="auth-logo">
+      <svg width="38" height="38" viewBox="0 0 512 512" fill="none">
+        <circle cx="256" cy="256" r="256" fill="#1DB954"/>
+        <path d="M160 256 Q256 130 352 256 Q256 382 160 256Z" fill="white" opacity="0.95"/>
+        <circle cx="256" cy="256" r="52" fill="#121212"/>
+        <circle cx="256" cy="256" r="32" fill="white"/>
+      </svg>
+      <span>Escales</span>
+    </div>
+    <p class="auth-tagline">Ta médiathèque musicale personnelle</p>
+
+    <div class="auth-tabs">
+      <button class="auth-tab active" data-tab="login">Connexion</button>
+      <button class="auth-tab" data-tab="register">Inscription</button>
+    </div>
+
+    <form id="login-form" class="auth-form active">
+      <div class="form-group">
+        <label for="login-email">Email</label>
+        <input type="email" id="login-email" placeholder="toi@exemple.com" autocomplete="email" required />
+      </div>
+      <div class="form-group">
+        <label for="login-password">Mot de passe</label>
+        <input type="password" id="login-password" placeholder="••••••••" autocomplete="current-password" required />
+      </div>
+      <div id="login-error" class="form-error hidden"></div>
+      <button type="submit" class="btn-primary btn-full">Se connecter</button>
+    </form>
+
+    <form id="register-form" class="auth-form">
+      <div class="form-group">
+        <label for="reg-email">Email</label>
+        <input type="email" id="reg-email" placeholder="toi@exemple.com" autocomplete="email" required />
+      </div>
+      <div class="form-group">
+        <label for="reg-password">Mot de passe</label>
+        <input type="password" id="reg-password" placeholder="Au moins 6 caractères" autocomplete="new-password" required />
+      </div>
+      <div id="register-error" class="form-error hidden"></div>
+      <div id="register-success" class="form-success hidden"></div>
+      <button type="submit" class="btn-primary btn-full">Créer un compte</button>
+    </form>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════
+     APP
+     ═══════════════════════════════════════════════════════ -->
+<div id="app" class="app hidden">
+
+  <!-- ── SIDEBAR ──────────────────────────────────────── -->
+  <aside class="sidebar">
+    <div class="sidebar-logo">
+      <svg width="26" height="26" viewBox="0 0 512 512" fill="none">
+        <circle cx="256" cy="256" r="256" fill="#1DB954"/>
+        <path d="M160 256 Q256 130 352 256 Q256 382 160 256Z" fill="white" opacity="0.95"/>
+        <circle cx="256" cy="256" r="52" fill="#121212"/>
+        <circle cx="256" cy="256" r="32" fill="white"/>
+      </svg>
+      <span>Escales</span>
+    </div>
+
+    <nav class="sidebar-nav">
+      <a href="#" class="nav-item active" data-view="home">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+          <path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/>
+        </svg>
+        <span>Accueil</span>
+      </a>
+      <a href="#" class="nav-item" data-view="library">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+          <path d="M12 3v10.55c-.59-.34-1.27-.55-2-.55-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4V7h4V3h-6z"/>
+        </svg>
+        <span>Bibliothèque</span>
+      </a>
+      <a href="#" class="nav-item" data-view="artists">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+          <path d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5C6.34 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z"/>
+        </svg>
+        <span>Artistes</span>
+      </a>
+    </nav>
+
+    <div class="sidebar-actions">
+      <button class="btn-sidebar-action" id="open-add-artist">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>
+        <span>Nouvel artiste</span>
+      </button>
+      <button class="btn-sidebar-action" id="open-add-song">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>
+        <span>Nouvelle musique</span>
+      </button>
+    </div>
+
+    <div class="sidebar-user">
+      <div class="user-avatar" id="user-avatar">?</div>
+      <span class="user-email" id="user-email-display"></span>
+      <button class="btn-logout" id="logout-btn" title="Se déconnecter">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+          <path d="M17 7l-1.41 1.41L18.17 11H8v2h10.17l-2.58 2.58L17 17l5-5zM4 5h8V3H4c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h8v-2H4V5z"/>
+        </svg>
+      </button>
+    </div>
+  </aside>
+
+  <!-- ── MAIN CONTENT ──────────────────────────────────── -->
+  <main class="main-content" id="main-content">
+
+    <div class="topbar">
+      <div class="topbar-nav">
+        <button class="topbar-btn" disabled>
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M15.41 7.41L14 6l-6 6 6 6 1.41-1.41L10.83 12z"/></svg>
+        </button>
+        <button class="topbar-btn" disabled>
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M10 6L8.59 7.41 13.17 12l-4.58 4.59L10 18l6-6z"/></svg>
+        </button>
+      </div>
+      <div class="topbar-search">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+          <path d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/>
+        </svg>
+        <input type="text" id="search-input" placeholder="Rechercher dans la vue…" autocomplete="off" />
+      </div>
+    </div>
+
+    <!-- ── HOME ────────────────────────────────────────── -->
+    <div id="view-home" class="view active">
+      <h1 class="view-title" id="greeting">Bonsoir</h1>
+
+      <section class="home-grid" id="featured-songs"></section>
+
+      <section class="view-section">
+        <div class="section-header">
+          <h2>Mes artistes</h2>
+          <a href="#" class="see-all" data-view="artists">Tout voir</a>
+        </div>
+        <div class="cards-row" id="home-artists-row"></div>
+      </section>
+
+      <section class="view-section">
+        <div class="section-header">
+          <h2>Ajouts récents</h2>
+          <a href="#" class="see-all" data-view="library">Tout voir</a>
+        </div>
+        <div class="songs-list" id="home-recent-songs"></div>
+      </section>
+    </div>
+
+    <!-- ── LIBRARY ──────────────────────────────────────── -->
+    <div id="view-library" class="view">
+      <h1 class="view-title">Ma bibliothèque</h1>
+      <div class="view-controls">
+        <span class="song-count" id="library-count"></span>
+      </div>
+      <div class="songs-list" id="library-songs-list"></div>
+    </div>
+
+    <!-- ── ARTISTS ─────────────────────────────────────── -->
+    <div id="view-artists" class="view">
+      <h1 class="view-title">Mes artistes</h1>
+      <div class="artists-grid" id="artists-grid"></div>
+    </div>
+
+    <!-- ── ARTIST DETAIL ───────────────────────────────── -->
+    <div id="view-artist-detail" class="view">
+      <div class="artist-hero">
+        <div class="artist-hero-image" id="artist-hero-image"></div>
+        <div class="artist-hero-info">
+          <span class="hero-label">Artiste</span>
+          <h1 id="artist-detail-name"></h1>
+          <p class="artist-genre" id="artist-detail-genre"></p>
+        </div>
+      </div>
+      <div class="artist-actions">
+        <button class="btn-play-all" id="play-all-btn">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
+          Tout jouer
+        </button>
+        <button class="btn-icon-only btn-delete-artist" id="delete-artist-btn" title="Supprimer l'artiste">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/>
+          </svg>
+        </button>
+      </div>
+      <div class="songs-list" id="artist-songs-list"></div>
+    </div>
+
+  </main>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════
+     PLAYER BAR
+     ═══════════════════════════════════════════════════════ -->
+<div id="player-bar" class="player-bar hidden">
+
+  <div class="player-left">
+    <div class="player-thumb" id="player-thumb">
+      <svg class="no-song-icon" viewBox="0 0 24 24" fill="currentColor">
+        <path d="M12 3v10.55c-.59-.34-1.27-.55-2-.55-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4V7h4V3h-6z"/>
+      </svg>
+    </div>
+    <div class="player-info">
+      <span class="player-title" id="player-title">—</span>
+      <span class="player-artist" id="player-artist">—</span>
+    </div>
+  </div>
+
+  <div class="player-center">
+    <div class="player-controls">
+      <button class="ctrl-btn" id="prev-btn" title="Précédent">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M6 6h2v12H6zm3.5 6l8.5 6V6z"/></svg>
+      </button>
+      <button class="ctrl-btn play-pause" id="play-pause-btn">
+        <svg class="icon-play" width="22" height="22" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
+        <svg class="icon-pause hidden" width="22" height="22" viewBox="0 0 24 24" fill="currentColor"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>
+      </button>
+      <button class="ctrl-btn" id="next-btn" title="Suivant">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M6 18l8.5-6L6 6v12zM16 6v12h2V6h-2z"/></svg>
+      </button>
+    </div>
+    <div class="player-progress">
+      <span class="time-current" id="time-current">0:00</span>
+      <div class="progress-bar" id="progress-bar">
+        <div class="progress-fill" id="progress-fill"></div>
+        <div class="progress-thumb" id="progress-thumb"></div>
+      </div>
+      <span class="time-total" id="time-total">0:00</span>
+    </div>
+  </div>
+
+  <div class="player-right">
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" style="color:var(--text-2)">
+      <path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z"/>
+    </svg>
+    <input type="range" class="volume-slider" id="volume-slider" min="0" max="100" value="80" />
+  </div>
+
+</div>
+
+<!-- ═══════════════════════════════════════════════════════
+     MODAL — Ajouter un artiste
+     ═══════════════════════════════════════════════════════ -->
+<div id="modal-add-artist" class="modal hidden">
+  <div class="modal-backdrop"></div>
+  <div class="modal-card">
+    <div class="modal-header">
+      <h2>Nouvel artiste</h2>
+      <button class="modal-close" data-modal="modal-add-artist">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+      </button>
+    </div>
+    <form id="form-add-artist">
+      <div class="form-group">
+        <label for="artist-name">Nom *</label>
+        <input type="text" id="artist-name" placeholder="Nom de l'artiste" required />
+      </div>
+      <div class="form-group">
+        <label for="artist-genre">Genre musical</label>
+        <input type="text" id="artist-genre" placeholder="ex. Hip-Hop, Jazz, Pop…" />
+      </div>
+      <div class="form-group">
+        <label for="artist-image">URL de l'image (optionnel)</label>
+        <input type="url" id="artist-image" placeholder="https://…" />
+      </div>
+      <div class="form-preview" id="artist-image-preview"></div>
+      <div id="add-artist-error" class="form-error hidden"></div>
+      <div class="modal-footer">
+        <button type="button" class="btn-secondary modal-close" data-modal="modal-add-artist">Annuler</button>
+        <button type="submit" class="btn-primary">Ajouter</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════
+     MODAL — Ajouter une musique
+     ═══════════════════════════════════════════════════════ -->
+<div id="modal-add-song" class="modal hidden">
+  <div class="modal-backdrop"></div>
+  <div class="modal-card">
+    <div class="modal-header">
+      <h2>Nouvelle musique</h2>
+      <button class="modal-close" data-modal="modal-add-song">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+      </button>
+    </div>
+    <form id="form-add-song">
+      <div class="form-group">
+        <label for="song-title">Titre *</label>
+        <input type="text" id="song-title" placeholder="Titre de la musique" required />
+      </div>
+      <div class="form-group">
+        <label for="song-artist">Artiste</label>
+        <select id="song-artist">
+          <option value="">— Sans artiste —</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label for="song-youtube">Lien YouTube *</label>
+        <input type="url" id="song-youtube" placeholder="https://www.youtube.com/watch?v=…" required />
+      </div>
+      <div id="youtube-preview" class="youtube-preview hidden">
+        <img id="yt-thumb-preview" src="" alt="Aperçu" />
+        <span id="yt-id-display"></span>
+      </div>
+      <div id="add-song-error" class="form-error hidden"></div>
+      <div class="modal-footer">
+        <button type="button" class="btn-secondary modal-close" data-modal="modal-add-song">Annuler</button>
+        <button type="submit" class="btn-primary">Ajouter</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════
+     MODAL — Confirmation
+     ═══════════════════════════════════════════════════════ -->
+<div id="modal-confirm" class="modal hidden">
+  <div class="modal-backdrop"></div>
+  <div class="modal-card modal-card-sm">
+    <div class="modal-header">
+      <h2 id="confirm-title">Confirmer</h2>
+      <button class="modal-close" data-modal="modal-confirm">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+      </button>
+    </div>
+    <p id="confirm-message" class="confirm-message"></p>
+    <div class="modal-footer">
+      <button type="button" class="btn-secondary modal-close" data-modal="modal-confirm">Annuler</button>
+      <button type="button" class="btn-danger" id="confirm-yes">Supprimer</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════
+     TOAST & YOUTUBE HIDDEN PLAYER
+     ═══════════════════════════════════════════════════════ -->
+<div id="toast" class="toast"></div>
+
+<div id="yt-player-wrap">
+  <div id="yt-player"></div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════
+     SCRIPTS
+     ═══════════════════════════════════════════════════════ -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script src="/js/config.js"></script>
+<script src="/js/app.js"></script>
+<script src="https://www.youtube.com/iframe_api" async></script>
+
+</body>
+</html>
