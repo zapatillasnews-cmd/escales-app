@@ -1,9 +1,6 @@
 'use strict';
 
-// ═══════════════════════════════════════════════════════════════════════
-// SUPABASE CLIENT
-// ═══════════════════════════════════════════════════════════════════════
-const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+// (Supabase désactivé — mode local uniquement)
 
 // ═══════════════════════════════════════════════════════════════════════
 // STATE
@@ -22,7 +19,6 @@ const state = {
   currentArtist: null,
   currentView:   'home',
   searchQuery:   '',
-  guestMode:     false,
 };
 
 // ═══════════════════════════════════════════════════════════════════════
@@ -111,25 +107,6 @@ function showConfirm(title, message, cb) {
   openModal('modal-confirm');
 }
 
-// ═══════════════════════════════════════════════════════════════════════
-// AUTH
-// ═══════════════════════════════════════════════════════════════════════
-async function login(email, password) {
-  const { error } = await sb.auth.signInWithPassword({ email, password });
-  if (error) throw error;
-}
-
-async function register(email, password) {
-  const { error } = await sb.auth.signUp({ email, password });
-  if (error) throw error;
-}
-
-async function logout() {
-  stopProgressTimer();
-  if (state.ytPlayer && state.ytReady) state.ytPlayer.stopVideo();
-  if (state.guestMode) { showAuth(); return; }
-  await sb.auth.signOut();
-}
 
 // ═══════════════════════════════════════════════════════════════════════
 // GUEST MODE — localStorage helpers
@@ -145,86 +122,39 @@ function lsId()           { return crypto.randomUUID(); }
 // DATABASE
 // ═══════════════════════════════════════════════════════════════════════
 async function fetchArtists() {
-  if (state.guestMode) {
-    state.artists = lsGet(LS_ARTISTS).sort((a, b) => a.name.localeCompare(b.name));
-    return;
-  }
-  const { data, error } = await sb.from('artists').select('*').order('name');
-  if (error) throw error;
-  state.artists = data ?? [];
+  state.artists = lsGet(LS_ARTISTS).sort((a, b) => a.name.localeCompare(b.name));
 }
 
 async function fetchSongs() {
-  if (state.guestMode) {
-    const songs = lsGet(LS_SONGS).sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
-    state.songs = songs.map(s => ({
-      ...s, artist_name: state.artists.find(a => a.id === s.artist_id)?.name ?? null,
-    }));
-    return;
-  }
-  const { data, error } = await sb
-    .from('songs').select('*, artists(name)')
-    .order('created_at', { ascending: false });
-  if (error) throw error;
-  state.songs = (data ?? []).map(s => ({
-    ...s, artist_name: s.artists?.name ?? null,
+  const songs = lsGet(LS_SONGS).sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+  state.songs = songs.map(s => ({
+    ...s, artist_name: state.artists.find(a => a.id === s.artist_id)?.name ?? null,
   }));
 }
 
 async function addArtist({ name, genre, image_url }) {
-  if (state.guestMode) {
-    const artist = { id: lsId(), name, genre: genre || null, image_url: image_url || null, created_at: new Date().toISOString() };
-    lsSet(LS_ARTISTS, [...lsGet(LS_ARTISTS), artist]);
-    await fetchArtists();
-    return;
-  }
-  const { error } = await sb.from('artists').insert({
-    user_id: state.user.id,
-    name, genre: genre || null, image_url: image_url || null,
-  });
-  if (error) throw error;
+  const artist = { id: lsId(), name, genre: genre || null, image_url: image_url || null, created_at: new Date().toISOString() };
+  lsSet(LS_ARTISTS, [...lsGet(LS_ARTISTS), artist]);
   await fetchArtists();
 }
 
 async function addSong({ title, artist_id, youtube_url }) {
   const youtube_id = extractYouTubeId(youtube_url);
   if (!youtube_id) throw new Error('Lien YouTube invalide. Utilise un lien youtube.com/watch ou youtu.be/…');
-  if (state.guestMode) {
-    const song = { id: lsId(), title, artist_id: artist_id || null, youtube_url, youtube_id, created_at: new Date().toISOString() };
-    lsSet(LS_SONGS, [...lsGet(LS_SONGS), song]);
-    await fetchSongs();
-    return;
-  }
-  const { error } = await sb.from('songs').insert({
-    user_id: state.user.id,
-    title, artist_id: artist_id || null, youtube_url, youtube_id,
-  });
-  if (error) throw error;
+  const song = { id: lsId(), title, artist_id: artist_id || null, youtube_url, youtube_id, created_at: new Date().toISOString() };
+  lsSet(LS_SONGS, [...lsGet(LS_SONGS), song]);
   await fetchSongs();
 }
 
 async function deleteArtist(id) {
-  if (state.guestMode) {
-    lsSet(LS_ARTISTS, lsGet(LS_ARTISTS).filter(a => a.id !== id));
-    lsSet(LS_SONGS,   lsGet(LS_SONGS).filter(s => s.artist_id !== id));
-    await fetchArtists();
-    await fetchSongs();
-    return;
-  }
-  const { error } = await sb.from('artists').delete().eq('id', id);
-  if (error) throw error;
+  lsSet(LS_ARTISTS, lsGet(LS_ARTISTS).filter(a => a.id !== id));
+  lsSet(LS_SONGS,   lsGet(LS_SONGS).filter(s => s.artist_id !== id));
   await fetchArtists();
   await fetchSongs();
 }
 
 async function deleteSong(id) {
-  if (state.guestMode) {
-    lsSet(LS_SONGS, lsGet(LS_SONGS).filter(s => s.id !== id));
-    await fetchSongs();
-    return;
-  }
-  const { error } = await sb.from('songs').delete().eq('id', id);
-  if (error) throw error;
+  lsSet(LS_SONGS, lsGet(LS_SONGS).filter(s => s.id !== id));
   await fetchSongs();
 }
 
@@ -527,50 +457,6 @@ function populateArtistSelect(preselect) {
 // ═══════════════════════════════════════════════════════════════════════
 function initEvents() {
 
-  // ── AUTH TABS ─────────────────────────────────────────────────
-  $qa('.auth-tab').forEach(tab => tab.addEventListener('click', () => {
-    $qa('.auth-tab').forEach(t => t.classList.remove('active'));
-    $qa('.auth-form').forEach(f => f.classList.remove('active'));
-    tab.classList.add('active');
-    $(`${tab.dataset.tab}-form`).classList.add('active');
-  }));
-
-  // ── LOGIN ─────────────────────────────────────────────────────
-  $('login-form').addEventListener('submit', async e => {
-    e.preventDefault();
-    const btn = e.target.querySelector('[type=submit]');
-    btn.disabled = true; btn.textContent = 'Connexion…';
-    const err = $('login-error'); hide(err);
-    try {
-      await login($('login-email').value, $('login-password').value);
-    } catch (ex) {
-      err.textContent = ex.message; show(err);
-      btn.disabled = false; btn.textContent = 'Se connecter';
-    }
-  });
-
-  // ── REGISTER ──────────────────────────────────────────────────
-  $('register-form').addEventListener('submit', async e => {
-    e.preventDefault();
-    const btn = e.target.querySelector('[type=submit]');
-    btn.disabled = true; btn.textContent = 'Création…';
-    const errEl = $('register-error'), succEl = $('register-success');
-    hide(errEl); hide(succEl);
-    try {
-      await register($('reg-email').value, $('reg-password').value);
-      succEl.textContent = 'Compte créé ! Vérifie ton email pour confirmer.';
-      show(succEl); btn.textContent = '✓ Compte créé';
-    } catch (ex) {
-      errEl.textContent = ex.message; show(errEl);
-      btn.disabled = false; btn.textContent = 'Créer un compte';
-    }
-  });
-
-  // ── LOGOUT ────────────────────────────────────────────────────
-  $('logout-btn').addEventListener('click', () =>
-    showConfirm('Se déconnecter', 'Tu vas être déconnecté(e).', logout)
-  );
-
   // ── SIDEBAR NAV ───────────────────────────────────────────────
   $qa('.nav-item').forEach(el => el.addEventListener('click', e => {
     e.preventDefault();
@@ -782,72 +668,23 @@ function initEvents() {
     if (state.currentView === 'artists') renderArtists(state.searchQuery);
   });
 
-  // ── GUEST MODE ────────────────────────────────────────────────
-  $('btn-guest').addEventListener('click', loginAsGuest);
 }
 
 // ═══════════════════════════════════════════════════════════════════════
-// SHOW / HIDE APP vs AUTH
+// INIT APP
 // ═══════════════════════════════════════════════════════════════════════
-async function showApp(user) {
-  state.user = user;
-  const isGuest = state.guestMode;
-  $('user-email-display').textContent = isGuest ? 'Mode invité' : (user.email ?? '');
-  $('user-avatar').textContent        = isGuest ? '?' : (user.email ?? '?')[0].toUpperCase();
-  isGuest ? show($('guest-badge')) : hide($('guest-badge'));
-  hide($('auth-screen'));
-  show($('app'));
-  await Promise.all([fetchArtists(), fetchSongs()]);
+async function startApp() {
+  await fetchArtists();
+  await fetchSongs();
   showView('home');
-}
-
-function showAuth() {
-  state.user = null; state.songs = []; state.artists = [];
-  state.guestMode = false;
-  stopProgressTimer();
-  hide($('guest-badge'));
-  show($('auth-screen'));
-  hide($('app'));
-  hide($('player-bar'));
-}
-
-async function loginAsGuest() {
-  state.guestMode = true;
-  await showApp({ id: 'guest', email: 'Mode invité' });
 }
 
 // ═══════════════════════════════════════════════════════════════════════
 // INIT
 // ═══════════════════════════════════════════════════════════════════════
 async function init() {
-  const configOk = SUPABASE_URL !== 'YOUR_SUPABASE_URL' && SUPABASE_ANON_KEY !== 'YOUR_SUPABASE_ANON_KEY';
-
   initEvents();
-
-  if (!configOk) {
-    // Supabase non configuré : désactiver email/password, garder le mode invité
-    $qa('.auth-tab, #login-form, #register-form').forEach(hide);
-    const notice = document.createElement('p');
-    notice.className = 'form-success';
-    notice.style.cssText = 'margin-bottom:1rem;text-align:center';
-    notice.textContent = 'Utilise le mode invité ou configure Supabase pour la sync cloud.';
-    $q('.auth-card').insertBefore(notice, $('btn-guest'));
-    show($('auth-screen'));
-    return;
-  }
-
-  // Supabase configuré : vérifier session existante
-  const { data: { session } } = await sb.auth.getSession();
-  if (session?.user) { await showApp(session.user); }
-  else               { showAuth(); }
-
-  // Listen for auth changes
-  sb.auth.onAuthStateChange(async (event, session) => {
-    if      (event === 'SIGNED_IN'  && session?.user) await showApp(session.user);
-    else if (event === 'SIGNED_OUT')                   showAuth();
-  });
-
-  // PWA
+  await startApp();
   if ('serviceWorker' in navigator) {
     navigator.serviceWorker.register('/service-worker.js').catch(() => {});
   }

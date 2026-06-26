@@ -16,62 +16,9 @@
 <body>
 
 <!-- ═══════════════════════════════════════════════════════
-     AUTH SCREEN
-     ═══════════════════════════════════════════════════════ -->
-<div id="auth-screen" class="auth-screen">
-  <div class="auth-card">
-    <div class="auth-logo">
-      <svg width="38" height="38" viewBox="0 0 512 512" fill="none">
-        <circle cx="256" cy="256" r="256" fill="#1DB954"/>
-        <path d="M160 256 Q256 130 352 256 Q256 382 160 256Z" fill="white" opacity="0.95"/>
-        <circle cx="256" cy="256" r="52" fill="#121212"/>
-        <circle cx="256" cy="256" r="32" fill="white"/>
-      </svg>
-      <span>Escales</span>
-    </div>
-    <p class="auth-tagline">Ta médiathèque musicale personnelle</p>
-
-    <div class="auth-tabs">
-      <button class="auth-tab active" data-tab="login">Connexion</button>
-      <button class="auth-tab" data-tab="register">Inscription</button>
-    </div>
-
-    <form id="login-form" class="auth-form active">
-      <div class="form-group">
-        <label for="login-email">Email</label>
-        <input type="email" id="login-email" placeholder="toi@exemple.com" autocomplete="email" required />
-      </div>
-      <div class="form-group">
-        <label for="login-password">Mot de passe</label>
-        <input type="password" id="login-password" placeholder="••••••••" autocomplete="current-password" required />
-      </div>
-      <div id="login-error" class="form-error hidden"></div>
-      <button type="submit" class="btn-primary btn-full">Se connecter</button>
-    </form>
-
-    <form id="register-form" class="auth-form">
-      <div class="form-group">
-        <label for="reg-email">Email</label>
-        <input type="email" id="reg-email" placeholder="toi@exemple.com" autocomplete="email" required />
-      </div>
-      <div class="form-group">
-        <label for="reg-password">Mot de passe</label>
-        <input type="password" id="reg-password" placeholder="Au moins 6 caractères" autocomplete="new-password" required />
-      </div>
-      <div id="register-error" class="form-error hidden"></div>
-      <div id="register-success" class="form-success hidden"></div>
-      <button type="submit" class="btn-primary btn-full">Créer un compte</button>
-    </form>
-
-    <div class="auth-divider">ou</div>
-    <button type="button" id="btn-guest" class="btn-guest">Continuer sans compte</button>
-  </div>
-</div>
-
-<!-- ═══════════════════════════════════════════════════════
      APP
      ═══════════════════════════════════════════════════════ -->
-<div id="app" class="app hidden">
+<div id="app" class="app">
 
   <!-- ── SIDEBAR ──────────────────────────────────────── -->
   <aside class="sidebar">
@@ -117,16 +64,6 @@
       </button>
     </div>
 
-    <div class="sidebar-user">
-      <div class="user-avatar" id="user-avatar">?</div>
-      <div class="guest-badge hidden" id="guest-badge">Invité</div>
-      <span class="user-email" id="user-email-display"></span>
-      <button class="btn-logout" id="logout-btn" title="Se déconnecter">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
-          <path d="M17 7l-1.41 1.41L18.17 11H8v2h10.17l-2.58 2.58L17 17l5-5zM4 5h8V3H4c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h8v-2H4V5z"/>
-        </svg>
-      </button>
-    </div>
   </aside>
 
   <!-- ── MAIN CONTENT ──────────────────────────────────── -->
@@ -370,8 +307,6 @@
 <!-- ═══════════════════════════════════════════════════════
      SCRIPTS
      ═══════════════════════════════════════════════════════ -->
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
-<script src="/js/config.js"></script>
 <script src="/js/app.js"></script>
 <script src="https://www.youtube.com/iframe_api" async></script>
 
