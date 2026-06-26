@@ -62,6 +62,9 @@
       <div id="register-success" class="form-success hidden"></div>
       <button type="submit" class="btn-primary btn-full">Créer un compte</button>
     </form>
+
+    <div class="auth-divider">ou</div>
+    <button type="button" id="btn-guest" class="btn-guest">Continuer sans compte</button>
   </div>
 </div>
 
@@ -116,6 +119,7 @@
 
     <div class="sidebar-user">
       <div class="user-avatar" id="user-avatar">?</div>
+      <div class="guest-badge hidden" id="guest-badge">Invité</div>
       <span class="user-email" id="user-email-display"></span>
       <button class="btn-logout" id="logout-btn" title="Se déconnecter">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">

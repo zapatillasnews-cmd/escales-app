@@ -22,6 +22,7 @@ const state = {
   currentArtist: null,
   currentView:   'home',
   searchQuery:   '',
+  guestMode:     false,
 };
 
 // ═══════════════════════════════════════════════════════════════════════
@@ -126,19 +127,41 @@ async function register(email, password) {
 async function logout() {
   stopProgressTimer();
   if (state.ytPlayer && state.ytReady) state.ytPlayer.stopVideo();
+  if (state.guestMode) { showAuth(); return; }
   await sb.auth.signOut();
 }
+
+// ═══════════════════════════════════════════════════════════════════════
+// GUEST MODE — localStorage helpers
+// ═══════════════════════════════════════════════════════════════════════
+const LS_ARTISTS = 'escales_artists';
+const LS_SONGS   = 'escales_songs';
+
+function lsGet(key)       { return JSON.parse(localStorage.getItem(key) || '[]'); }
+function lsSet(key, data) { localStorage.setItem(key, JSON.stringify(data)); }
+function lsId()           { return crypto.randomUUID(); }
 
 // ═══════════════════════════════════════════════════════════════════════
 // DATABASE
 // ═══════════════════════════════════════════════════════════════════════
 async function fetchArtists() {
+  if (state.guestMode) {
+    state.artists = lsGet(LS_ARTISTS).sort((a, b) => a.name.localeCompare(b.name));
+    return;
+  }
   const { data, error } = await sb.from('artists').select('*').order('name');
   if (error) throw error;
   state.artists = data ?? [];
 }
 
 async function fetchSongs() {
+  if (state.guestMode) {
+    const songs = lsGet(LS_SONGS).sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+    state.songs = songs.map(s => ({
+      ...s, artist_name: state.artists.find(a => a.id === s.artist_id)?.name ?? null,
+    }));
+    return;
+  }
   const { data, error } = await sb
     .from('songs').select('*, artists(name)')
     .order('created_at', { ascending: false });
@@ -149,6 +172,12 @@ async function fetchSongs() {
 }
 
 async function addArtist({ name, genre, image_url }) {
+  if (state.guestMode) {
+    const artist = { id: lsId(), name, genre: genre || null, image_url: image_url || null, created_at: new Date().toISOString() };
+    lsSet(LS_ARTISTS, [...lsGet(LS_ARTISTS), artist]);
+    await fetchArtists();
+    return;
+  }
   const { error } = await sb.from('artists').insert({
     user_id: state.user.id,
     name, genre: genre || null, image_url: image_url || null,
@@ -160,6 +189,12 @@ async function addArtist({ name, genre, image_url }) {
 async function addSong({ title, artist_id, youtube_url }) {
   const youtube_id = extractYouTubeId(youtube_url);
   if (!youtube_id) throw new Error('Lien YouTube invalide. Utilise un lien youtube.com/watch ou youtu.be/…');
+  if (state.guestMode) {
+    const song = { id: lsId(), title, artist_id: artist_id || null, youtube_url, youtube_id, created_at: new Date().toISOString() };
+    lsSet(LS_SONGS, [...lsGet(LS_SONGS), song]);
+    await fetchSongs();
+    return;
+  }
   const { error } = await sb.from('songs').insert({
     user_id: state.user.id,
     title, artist_id: artist_id || null, youtube_url, youtube_id,
@@ -169,6 +204,13 @@ async function addSong({ title, artist_id, youtube_url }) {
 }
 
 async function deleteArtist(id) {
+  if (state.guestMode) {
+    lsSet(LS_ARTISTS, lsGet(LS_ARTISTS).filter(a => a.id !== id));
+    lsSet(LS_SONGS,   lsGet(LS_SONGS).filter(s => s.artist_id !== id));
+    await fetchArtists();
+    await fetchSongs();
+    return;
+  }
   const { error } = await sb.from('artists').delete().eq('id', id);
   if (error) throw error;
   await fetchArtists();
@@ -176,6 +218,11 @@ async function deleteArtist(id) {
 }
 
 async function deleteSong(id) {
+  if (state.guestMode) {
+    lsSet(LS_SONGS, lsGet(LS_SONGS).filter(s => s.id !== id));
+    await fetchSongs();
+    return;
+  }
   const { error } = await sb.from('songs').delete().eq('id', id);
   if (error) throw error;
   await fetchSongs();
@@ -734,6 +781,9 @@ function initEvents() {
     if (state.currentView === 'library') renderLibrary(state.searchQuery);
     if (state.currentView === 'artists') renderArtists(state.searchQuery);
   });
+
+  // ── GUEST MODE ────────────────────────────────────────────────
+  $('btn-guest').addEventListener('click', loginAsGuest);
 }
 
 // ═══════════════════════════════════════════════════════════════════════
@@ -741,8 +791,10 @@ function initEvents() {
 // ═══════════════════════════════════════════════════════════════════════
 async function showApp(user) {
   state.user = user;
-  $('user-email-display').textContent = user.email ?? '';
-  $('user-avatar').textContent        = (user.email ?? '?')[0].toUpperCase();
+  const isGuest = state.guestMode;
+  $('user-email-display').textContent = isGuest ? 'Mode invité' : (user.email ?? '');
+  $('user-avatar').textContent        = isGuest ? '?' : (user.email ?? '?')[0].toUpperCase();
+  isGuest ? show($('guest-badge')) : hide($('guest-badge'));
   hide($('auth-screen'));
   show($('app'));
   await Promise.all([fetchArtists(), fetchSongs()]);
@@ -751,43 +803,40 @@ async function showApp(user) {
 
 function showAuth() {
   state.user = null; state.songs = []; state.artists = [];
+  state.guestMode = false;
   stopProgressTimer();
+  hide($('guest-badge'));
   show($('auth-screen'));
   hide($('app'));
   hide($('player-bar'));
+}
+
+async function loginAsGuest() {
+  state.guestMode = true;
+  await showApp({ id: 'guest', email: 'Mode invité' });
 }
 
 // ═══════════════════════════════════════════════════════════════════════
 // INIT
 // ═══════════════════════════════════════════════════════════════════════
 async function init() {
-  // Guard: config not set
-  if (SUPABASE_URL === 'YOUR_SUPABASE_URL' || SUPABASE_ANON_KEY === 'YOUR_SUPABASE_ANON_KEY') {
-    document.body.innerHTML = `
-      <div style="display:flex;align-items:center;justify-content:center;height:100vh;
-                  background:#121212;color:#fff;font-family:sans-serif;text-align:center;padding:2rem">
-        <div>
-          <div style="font-size:3rem;margin-bottom:1rem">🎵</div>
-          <h2 style="color:#1DB954;font-size:1.5rem;margin-bottom:.75rem">Configuration requise</h2>
-          <p style="color:#b3b3b3;line-height:1.8">
-            Ouvre <code style="background:#282828;padding:3px 8px;border-radius:4px;color:#fff">js/config.js</code>
-            et remplace<br>
-            <code style="color:#1DB954">YOUR_SUPABASE_URL</code> et
-            <code style="color:#1DB954">YOUR_SUPABASE_ANON_KEY</code><br>
-            avec tes clés Supabase.
-          </p>
-          <p style="margin-top:1.25rem;color:#737373;font-size:.85rem">
-            Exécute aussi <code style="background:#282828;padding:2px 6px;border-radius:4px;color:#b3b3b3">supabase/schema.sql</code>
-            dans l'éditeur SQL Supabase.
-          </p>
-        </div>
-      </div>`;
-    return;
-  }
+  const configOk = SUPABASE_URL !== 'YOUR_SUPABASE_URL' && SUPABASE_ANON_KEY !== 'YOUR_SUPABASE_ANON_KEY';
 
   initEvents();
 
-  // Check current session
+  if (!configOk) {
+    // Supabase non configuré : désactiver email/password, garder le mode invité
+    $qa('.auth-tab, #login-form, #register-form').forEach(hide);
+    const notice = document.createElement('p');
+    notice.className = 'form-success';
+    notice.style.cssText = 'margin-bottom:1rem;text-align:center';
+    notice.textContent = 'Utilise le mode invité ou configure Supabase pour la sync cloud.';
+    $q('.auth-card').insertBefore(notice, $('btn-guest'));
+    show($('auth-screen'));
+    return;
+  }
+
+  // Supabase configuré : vérifier session existante
   const { data: { session } } = await sb.auth.getSession();
   if (session?.user) { await showApp(session.user); }
   else               { showAuth(); }

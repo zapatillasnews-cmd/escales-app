@@ -916,6 +916,51 @@ svg { display: block; flex-shrink: 0; }
   pointer-events: none;
 }
 
+/* ─── Auth divider + guest button ───────────────────────── */
+.auth-divider {
+  position: relative;
+  text-align: center;
+  color: var(--text-3);
+  font-size: .75rem;
+  margin: 1rem 0 .5rem;
+}
+.auth-divider::before,
+.auth-divider::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  width: 44%;
+  height: 1px;
+  background: rgba(255,255,255,.1);
+}
+.auth-divider::before { left: 0; }
+.auth-divider::after  { right: 0; }
+
+.btn-guest {
+  display: block; width: 100%;
+  text-align: center;
+  color: var(--text-3);
+  font-size: .875rem; font-weight: 500;
+  padding: .65rem;
+  border-radius: var(--radius);
+  transition: color var(--transition);
+  cursor: pointer; background: none; border: none;
+}
+.btn-guest:hover { color: var(--text-1); text-decoration: underline; }
+
+/* ─── Guest badge (sidebar) ─────────────────────────────── */
+.guest-badge {
+  display: inline-flex; align-items: center;
+  background: rgba(255,255,255,.07);
+  border: 1px solid rgba(255,255,255,.12);
+  border-radius: 500px;
+  padding: .2rem .55rem;
+  font-size: .7rem; font-weight: 700;
+  color: var(--text-3);
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
 /* ═══════════════════════════════════════════════════════════
    RESPONSIVE (basic)
    ═══════════════════════════════════════════════════════════ */
