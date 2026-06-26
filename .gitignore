@@ -13,6 +13,7 @@ Thumbs.db
 # Editeurs
 .vscode/
 .idea/
+.claude/
 
 # Vercel
 .vercel/

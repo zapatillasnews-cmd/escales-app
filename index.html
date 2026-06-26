@@ -198,6 +198,106 @@
     <input type="range" class="volume-slider" id="volume-slider" min="0" max="100" value="80" />
   </div>
 
+  <div class="mini-progress" id="mini-progress"><div class="mini-progress-fill" id="mini-progress-fill"></div></div>
+
+</div>
+
+<!-- ═══════════════════════════════════════════════════════
+     NOW PLAYING — Lecteur plein écran (mobile + desktop)
+     ═══════════════════════════════════════════════════════ -->
+<div id="now-playing" class="now-playing hidden">
+  <div class="np-bg" id="np-bg"></div>
+  <div class="np-inner">
+    <div class="np-header">
+      <button class="np-icon-btn" id="np-close" title="Réduire">
+        <svg width="26" height="26" viewBox="0 0 24 24" fill="currentColor"><path d="M7.41 8.59L12 13.17l4.59-4.58L18 10l-6 6-6-6z"/></svg>
+      </button>
+      <span class="np-context">En lecture</span>
+      <span class="np-icon-btn np-spacer"></span>
+    </div>
+
+    <div class="np-artwork">
+      <img id="np-image" src="" alt="Pochette" />
+    </div>
+
+    <div class="np-bottom">
+      <div class="np-meta">
+        <h2 id="np-title">—</h2>
+        <p id="np-artist">—</p>
+      </div>
+
+      <div class="np-progress">
+        <div class="progress-bar np-bar" id="np-progress-bar">
+          <div class="progress-fill" id="np-progress-fill"></div>
+          <div class="progress-thumb" id="np-progress-thumb"></div>
+        </div>
+        <div class="np-times">
+          <span id="np-time-current">0:00</span>
+          <span id="np-time-total">0:00</span>
+        </div>
+      </div>
+
+      <div class="np-controls">
+        <button class="np-ctrl" id="np-shuffle" title="Aléatoire">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor"><path d="M10.59 9.17L5.41 4 4 5.41l5.17 5.17 1.42-1.41zM14.5 4l2.04 2.04L4 18.59 5.41 20 17.96 7.46 20 9.5V4h-5.5zm.33 9.41l-1.41 1.41 3.13 3.13L14.5 20H20v-5.5l-2.04 2.04-3.13-3.13z"/></svg>
+        </button>
+        <button class="np-ctrl" id="np-prev" title="Précédent">
+          <svg width="30" height="30" viewBox="0 0 24 24" fill="currentColor"><path d="M6 6h2v12H6zm3.5 6l8.5 6V6z"/></svg>
+        </button>
+        <button class="np-ctrl np-play" id="np-play-pause">
+          <svg class="np-icon-play" width="34" height="34" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
+          <svg class="np-icon-pause hidden" width="34" height="34" viewBox="0 0 24 24" fill="currentColor"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>
+        </button>
+        <button class="np-ctrl" id="np-next" title="Suivant">
+          <svg width="30" height="30" viewBox="0 0 24 24" fill="currentColor"><path d="M6 18l8.5-6L6 6v12zM16 6v12h2V6h-2z"/></svg>
+        </button>
+        <button class="np-ctrl" id="np-repeat" title="Répéter">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor"><path d="M7 7h10v3l4-4-4-4v3H5v6h2V7zm10 10H7v-3l-4 4 4 4v-3h12v-6h-2v4z"/></svg>
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════
+     MOBILE — Navigation en bas + bouton flottant
+     ═══════════════════════════════════════════════════════ -->
+<nav class="mobile-nav" id="mobile-nav">
+  <button class="mobile-nav-item active" data-view="home">
+    <svg viewBox="0 0 24 24" fill="currentColor"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg>
+    <span>Accueil</span>
+  </button>
+  <button class="mobile-nav-item" data-view="library">
+    <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 3v10.55c-.59-.34-1.27-.55-2-.55-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4V7h4V3h-6z"/></svg>
+    <span>Bibliothèque</span>
+  </button>
+  <button class="mobile-nav-item" data-view="artists">
+    <svg viewBox="0 0 24 24" fill="currentColor"><path d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5C6.34 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z"/></svg>
+    <span>Artistes</span>
+  </button>
+</nav>
+
+<button class="mobile-fab" id="mobile-fab" title="Ajouter">
+  <svg viewBox="0 0 24 24" fill="currentColor"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>
+</button>
+
+<!-- ═══════════════════════════════════════════════════════
+     ACTION SHEET — Menu d'ajout (mobile)
+     ═══════════════════════════════════════════════════════ -->
+<div id="action-sheet" class="action-sheet hidden">
+  <div class="action-sheet-backdrop" data-close-sheet></div>
+  <div class="action-sheet-panel">
+    <div class="action-sheet-handle"></div>
+    <button class="action-sheet-btn" data-action="open-add-song">
+      <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 3v10.55c-.59-.34-1.27-.55-2-.55-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4V7h4V3h-6z"/></svg>
+      <span>Nouvelle musique</span>
+    </button>
+    <button class="action-sheet-btn" data-action="open-add-artist">
+      <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg>
+      <span>Nouvel artiste</span>
+    </button>
+    <button class="action-sheet-btn action-cancel" data-close-sheet>Annuler</button>
+  </div>
 </div>
 
 <!-- ═══════════════════════════════════════════════════════

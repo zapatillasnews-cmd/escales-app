@@ -1,5 +1,5 @@
-const CACHE   = 'escales-v1';
-const SHELL   = ['/', '/index.html', '/css/style.css', '/js/config.js', '/js/app.js', '/manifest.webmanifest', '/icons/icon.svg'];
+const CACHE   = 'escales-v2';
+const SHELL   = ['/', '/index.html', '/css/style.css', '/js/app.js', '/manifest.webmanifest', '/icons/icon.svg'];
 const YT_CACHE = 'escales-yt-thumbs-v1';
 
 self.addEventListener('install', e => {

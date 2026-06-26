@@ -19,6 +19,9 @@ const state = {
   currentArtist: null,
   currentView:   'home',
   searchQuery:   '',
+  shuffle:       false,
+  repeat:        false,
+  errorCount:    0,
 };
 
 // ═══════════════════════════════════════════════════════════════════════
@@ -41,6 +44,10 @@ function extractYouTubeId(url) {
 
 function ytThumb(id) {
   return id ? `https://img.youtube.com/vi/${id}/mqdefault.jpg` : null;
+}
+
+function ytHQThumb(id) {
+  return id ? `https://img.youtube.com/vi/${id}/hqdefault.jpg` : null;
 }
 
 function formatTime(sec) {
@@ -72,6 +79,8 @@ const $q = sel => document.querySelector(sel);
 const $qa = sel => [...document.querySelectorAll(sel)];
 const show = el => el?.classList.remove('hidden');
 const hide = el => el?.classList.add('hidden');
+const setText  = (id, val)        => { const el = $(id); if (el) el.textContent = val; };
+const setStyle = (id, prop, val)  => { const el = $(id); if (el) el.style[prop] = val; };
 
 // ═══════════════════════════════════════════════════════════════════════
 // TOAST
@@ -91,7 +100,8 @@ function toast(msg, type = 'info') {
 function openModal(id) {
   const m = $(id); if (!m) return;
   m.classList.remove('hidden');
-  requestAnimationFrame(() => requestAnimationFrame(() => m.classList.add('modal-open')));
+  void m.offsetWidth;             // force reflow → animation fiable
+  m.classList.add('modal-open');
 }
 function closeModal(id) {
   const m = $(id); if (!m) return;
@@ -163,12 +173,13 @@ async function deleteSong(id) {
 // ═══════════════════════════════════════════════════════════════════════
 function showView(name, artistId) {
   $qa('.view').forEach(v => v.classList.remove('active'));
-  $qa('.nav-item').forEach(n => n.classList.remove('active'));
+  $qa('.nav-item, .mobile-nav-item').forEach(n => n.classList.remove('active'));
 
   $(`view-${name}`)?.classList.add('active');
 
   const navKey = name === 'artist-detail' ? 'artists' : name;
-  $q(`.nav-item[data-view="${navKey}"]`)?.classList.add('active');
+  $qa(`.nav-item[data-view="${navKey}"], .mobile-nav-item[data-view="${navKey}"]`)
+    .forEach(el => el.classList.add('active'));
 
   state.currentView = name;
   $('main-content').scrollTop = 0;
@@ -352,6 +363,7 @@ window.onYouTubeIframeAPIReady = function () {
       onStateChange: e => {
         if (e.data === YT.PlayerState.PLAYING) {
           state.isPlaying = true;
+          state.errorCount = 0;
           startProgressTimer();
           updatePlayPauseBtn(true);
         } else if (e.data === YT.PlayerState.PAUSED) {
@@ -360,8 +372,24 @@ window.onYouTubeIframeAPIReady = function () {
           updatePlayPauseBtn(false);
         } else if (e.data === YT.PlayerState.ENDED) {
           stopProgressTimer();
-          playNext();
+          if (state.repeat && state.currentSong) {
+            state.ytPlayer.seekTo(0, true);
+            state.ytPlayer.playVideo();
+          } else {
+            playNext();
+          }
         }
+      },
+      onError: () => {
+        // Vidéo non lisible (intégration désactivée, supprimée…) → suivante
+        stopProgressTimer();
+        state.errorCount++;
+        if (state.errorCount > state.queue.length) {
+          toast('Aucune vidéo lisible dans la file.', 'info');
+          return;
+        }
+        toast('Vidéo indisponible, passage à la suivante…', 'info');
+        setTimeout(playNext, 500);
       },
     },
   });
@@ -384,7 +412,10 @@ function playSongNow(song) {
   $qa('.song-row').forEach(r => r.classList.remove('active'));
   $qa(`[data-song-id="${song.id}"]`).forEach(r => r.classList.add('active'));
 
+  syncNowPlaying(song);
+
   show($('player-bar'));
+  document.body.classList.add('has-player');
   state.ytPlayer.loadVideoById(song.youtube_id);
 }
 
@@ -402,7 +433,14 @@ function togglePlay() {
 
 function playNext() {
   if (!state.queue.length) return;
-  state.queueIndex = (state.queueIndex + 1) % state.queue.length;
+  if (state.shuffle && state.queue.length > 1) {
+    let idx;
+    do { idx = Math.floor(Math.random() * state.queue.length); }
+    while (idx === state.queueIndex);
+    state.queueIndex = idx;
+  } else {
+    state.queueIndex = (state.queueIndex + 1) % state.queue.length;
+  }
   playSongNow(state.queue[state.queueIndex]);
 }
 
@@ -427,19 +465,93 @@ function stopProgressTimer() {
 
 function updateProgress() {
   if (!state.ytPlayer || !state.isPlaying) return;
-  const cur   = state.ytPlayer.getCurrentTime() || 0;
-  const total = state.ytPlayer.getDuration()    || 0;
-  $('time-current').textContent = formatTime(cur);
-  $('time-total').textContent   = formatTime(total);
+  paintProgress(state.ytPlayer.getCurrentTime() || 0, state.ytPlayer.getDuration() || 0);
+}
+
+function paintProgress(cur, total) {
   const pct = total > 0 ? (cur / total) * 100 : 0;
-  $('progress-fill').style.width  = `${pct}%`;
-  $('progress-thumb').style.left  = `${pct}%`;
+  // Mini / desktop player bar
+  setText('time-current', formatTime(cur));
+  setText('time-total',   formatTime(total));
+  setStyle('progress-fill',      'width', `${pct}%`);
+  setStyle('progress-thumb',     'left',  `${pct}%`);
+  setStyle('mini-progress-fill', 'width', `${pct}%`);
+  // Now playing (full screen)
+  setText('np-time-current', formatTime(cur));
+  setText('np-time-total',   formatTime(total));
+  setStyle('np-progress-fill',  'width', `${pct}%`);
+  setStyle('np-progress-thumb', 'left',  `${pct}%`);
+}
+
+function togglePair(btn, playSel, pauseSel, playing) {
+  if (!btn) return;
+  btn.querySelector(playSel)?.classList.toggle('hidden', playing);
+  btn.querySelector(pauseSel)?.classList.toggle('hidden', !playing);
 }
 
 function updatePlayPauseBtn(playing) {
-  const btn = $('play-pause-btn');
-  btn.querySelector('.icon-play')[playing ? 'classList' : 'classList'][playing ? 'add' : 'remove']('hidden');
-  btn.querySelector('.icon-pause')[playing ? 'classList' : 'classList'][playing ? 'remove' : 'add']('hidden');
+  togglePair($('play-pause-btn'), '.icon-play',    '.icon-pause',    playing);
+  togglePair($('np-play-pause'),  '.np-icon-play', '.np-icon-pause', playing);
+}
+
+// ═══════════════════════════════════════════════════════════════════════
+// NOW PLAYING — full screen player
+// ═══════════════════════════════════════════════════════════════════════
+function syncNowPlaying(song) {
+  setText('np-title',  song.title);
+  setText('np-artist', song.artist_name ?? '');
+
+  const img = $('np-image');
+  if (img && song.youtube_id) {
+    img.onerror = () => { img.onerror = null; img.src = ytThumb(song.youtube_id); };
+    img.src = ytHQThumb(song.youtube_id);
+  }
+  setStyle('np-bg', 'backgroundImage', song.youtube_id ? `url('${ytHQThumb(song.youtube_id)}')` : '');
+}
+
+function openNowPlaying() {
+  if (!state.currentSong) return;
+  const np = $('now-playing');
+  np.classList.remove('hidden');
+  void np.offsetWidth;            // force reflow → l'animation se déclenche de façon fiable
+  np.classList.add('open');
+  updatePlayPauseBtn(state.isPlaying);
+  if (state.ytReady && state.ytPlayer.getDuration) {
+    paintProgress(state.ytPlayer.getCurrentTime() || 0, state.ytPlayer.getDuration() || 0);
+  }
+}
+
+function closeNowPlaying() {
+  const np = $('now-playing');
+  np.classList.remove('open');
+  setTimeout(() => np.classList.add('hidden'), 340);
+}
+
+function toggleShuffle() {
+  state.shuffle = !state.shuffle;
+  $('np-shuffle').classList.toggle('np-active', state.shuffle);
+  toast(state.shuffle ? 'Lecture aléatoire activée' : 'Lecture aléatoire désactivée', 'info');
+}
+
+function toggleRepeat() {
+  state.repeat = !state.repeat;
+  $('np-repeat').classList.toggle('np-active', state.repeat);
+  toast(state.repeat ? 'Répétition activée' : 'Répétition désactivée', 'info');
+}
+
+// ═══════════════════════════════════════════════════════════════════════
+// ACTION SHEET (mobile add menu)
+// ═══════════════════════════════════════════════════════════════════════
+function openSheet() {
+  const s = $('action-sheet');
+  s.classList.remove('hidden');
+  void s.offsetWidth;             // force reflow → animation fiable
+  s.classList.add('open');
+}
+function closeSheet() {
+  const s = $('action-sheet');
+  s.classList.remove('open');
+  setTimeout(() => s.classList.add('hidden'), 280);
 }
 
 // ═══════════════════════════════════════════════════════════════════════
@@ -567,7 +679,12 @@ function initEvents() {
       const song = state.songs.find(s => s.id === id);
       showConfirm('Supprimer la musique', `Supprimer "${song?.title ?? 'cette musique'}" ?`, async () => {
         await deleteSong(id);
-        if (state.currentSong?.id === id) { hide($('player-bar')); state.currentSong = null; }
+        if (state.currentSong?.id === id) {
+          hide($('player-bar'));
+          document.body.classList.remove('has-player');
+          if ($('now-playing').classList.contains('open')) closeNowPlaying();
+          state.currentSong = null;
+        }
         toast('Musique supprimée.', 'info');
         if (state.currentView === 'home')          renderHome();
         if (state.currentView === 'library')       renderLibrary();
@@ -666,6 +783,46 @@ function initEvents() {
     state.searchQuery = e.target.value;
     if (state.currentView === 'library') renderLibrary(state.searchQuery);
     if (state.currentView === 'artists') renderArtists(state.searchQuery);
+  });
+
+  // ── MOBILE NAV ────────────────────────────────────────────────
+  $qa('.mobile-nav-item').forEach(el =>
+    el.addEventListener('click', () => showView(el.dataset.view))
+  );
+
+  // ── MOBILE FAB + ACTION SHEET ─────────────────────────────────
+  $('mobile-fab').addEventListener('click', openSheet);
+  $qa('[data-close-sheet]').forEach(el => el.addEventListener('click', closeSheet));
+  $q('.action-sheet-panel').addEventListener('click', e => {
+    if (e.target.closest('[data-action]')) closeSheet();
+  });
+
+  // ── EXPAND MINI-PLAYER → NOW PLAYING ──────────────────────────
+  $('player-bar').addEventListener('click', e => {
+    if (e.target.closest('.ctrl-btn') ||
+        e.target.closest('.progress-bar') ||
+        e.target.closest('.player-right')) return;
+    openNowPlaying();
+  });
+
+  // ── NOW PLAYING CONTROLS ──────────────────────────────────────
+  $('np-close').addEventListener('click', closeNowPlaying);
+  $('np-play-pause').addEventListener('click', togglePlay);
+  $('np-prev').addEventListener('click', playPrev);
+  $('np-next').addEventListener('click', playNext);
+  $('np-shuffle').addEventListener('click', toggleShuffle);
+  $('np-repeat').addEventListener('click', toggleRepeat);
+  $('np-progress-bar').addEventListener('click', e => {
+    if (!state.ytReady || !state.currentSong) return;
+    const r = e.currentTarget.getBoundingClientRect();
+    state.ytPlayer.seekTo(((e.clientX - r.left) / r.width) * (state.ytPlayer.getDuration() || 0), true);
+  });
+
+  // ── ESCAPE pour fermer ────────────────────────────────────────
+  document.addEventListener('keydown', e => {
+    if (e.key !== 'Escape') return;
+    if ($('now-playing').classList.contains('open')) closeNowPlaying();
+    else if ($('action-sheet').classList.contains('open')) closeSheet();
   });
 
 }
